@@ -37,9 +37,9 @@ object PropertyMarket extends App{
     }
     bufferedSource.close
     if(myListBuf.max == myListBuf.min)
-      println("The document has consistent number of rows. Proceeding with analysis.")
+      println("The document has consistent row lengths. Proceeding with analysis.")
     else
-      throw new Exception ("The document has inconsistent number of rows. Cannot proceed with analysis.")
+      throw new Exception ("The document has inconsistent row lengths. Cannot proceed with analysis.")
   }
 
 
