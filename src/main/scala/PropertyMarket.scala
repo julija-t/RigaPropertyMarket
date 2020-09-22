@@ -68,7 +68,11 @@ object PropertyMarket extends App{
   val rawSplit = getParsedLines(filePath)
   val seqWithoutEmptyValues = rawSplit.map(line => line.map(el => if (el.isEmpty) 0.toString else el))
   val allPropertyAds = getPropertyAdSeq(seqWithoutEmptyValues.slice(1, seqWithoutEmptyValues.length))
-  val latestAds = allPropertyAds.filter(_.date == "2020-09-21")
-  latestAds.foreach(println)
+  val cleansedPropertyAds = allPropertyAds.map(t => PropertyAdClean(t.id, t.project_name, t.developer, t.city,
+    t.district, t.address, t.property_type, t.status, t.size, t.number_of_rooms,
+  t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date))
+  val latestPropertyAds = cleansedPropertyAds.filter(_.date == "2020-09-21")
+  latestPropertyAds.foreach(println)
+
 
 }
