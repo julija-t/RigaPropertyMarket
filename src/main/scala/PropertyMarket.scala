@@ -1,4 +1,5 @@
 import java.io.File
+import java.sql.DriverManager
 
 object PropertyMarket extends App{
   println(System.getProperty("user.dir"))
@@ -42,7 +43,7 @@ object PropertyMarket extends App{
       throw new Exception ("The document has inconsistent row lengths. Cannot proceed with analysis.")
   }
 
-  def getParsedLines(fileName:String) = {
+  def getParsedLines(fileName:String): Seq[Seq[String]] = {
     var myListBuf = scala.collection.mutable.ListBuffer[Seq[String]]()
     val bufferedSource = io.Source.fromFile(fileName)
     for (line <- bufferedSource.getLines) {
@@ -59,6 +60,31 @@ object PropertyMarket extends App{
       t(13).toDouble, t(14).toDouble, t(15), t(16), t(17), t(18)))
   }
 
+  val url = "jdbc:sqlite:C:/sqlite/db/property_market.db"
+  val conn = DriverManager.getConnection(url)
+  val statement = conn.createStatement()
+  val createEmptyTable =
+    """
+      |CREATE TABLE IF NOT EXISTS property_market_riga (
+      |id TEXT,
+      |project_name TEXT,
+      |developer TEXT,
+      |city TEXT,
+      |district TEXT,
+      |address TEXT,
+      |property_type TEXT,
+      |status TEXT,
+      |size DOUBLE,
+      |number_of_rooms INT,
+      |floor INT,
+      |price DOUBLE,
+      |price_per_sqm DOUBLE,
+      |project_link TEXT,
+      |apartment_link TEXT,
+      |date DATE
+      |)""".stripMargin
+
+
   val filePath = "./src/resources/property_market_2109.csv"
   val filePath2 = "./src/resources/fails_par_2019_gadu.csv" // temporary
   val lineCount = getLineCount(filePath)
@@ -71,8 +97,11 @@ object PropertyMarket extends App{
   val cleansedPropertyAds = allPropertyAds.map(t => PropertyAdClean(t.id, t.project_name, t.developer, t.city,
     t.district, t.address, t.property_type, t.status, t.size, t.number_of_rooms,
   t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date))
-  val latestPropertyAds = cleansedPropertyAds.filter(_.date == "2020-09-21")
-  latestPropertyAds.foreach(println)
+//  val latestPropertyAds = cleansedPropertyAds.filter(_.date == "2020-09-21") //temporary for checking if sequence works
+
+  //DB part
+  val resultTable = statement.execute(createEmptyTable)
+
 
 
 }
