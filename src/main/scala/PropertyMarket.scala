@@ -1,5 +1,5 @@
 import java.io.File
-import java.sql.DriverManager
+import java.sql.{DriverManager, PreparedStatement}
 
 object PropertyMarket extends App{
   println(System.getProperty("user.dir"))
@@ -63,7 +63,7 @@ object PropertyMarket extends App{
   val url = "jdbc:sqlite:C:/sqlite/db/property_market.db"
   val conn = DriverManager.getConnection(url)
   val statement = conn.createStatement()
-  val createEmptyTable =
+  val createTableSql =
     """
       |CREATE TABLE IF NOT EXISTS property_market_riga (
       |id TEXT,
@@ -84,6 +84,11 @@ object PropertyMarket extends App{
       |date DATE
       |)""".stripMargin
 
+  val insertValuesToTable =
+    """
+      |INSERT INTO property_market_riga VALUES(?,?)
+      |""".stripMargin
+
 
   val filePath = "./src/resources/property_market_2109.csv"
   val filePath2 = "./src/resources/fails_par_2019_gadu.csv" // temporary
@@ -96,12 +101,18 @@ object PropertyMarket extends App{
   val allPropertyAds = getPropertyAdSeq(seqWithoutEmptyValues.slice(1, seqWithoutEmptyValues.length))
   val cleansedPropertyAds = allPropertyAds.map(t => PropertyAdClean(t.id, t.project_name, t.developer, t.city,
     t.district, t.address, t.property_type, t.status, t.size, t.number_of_rooms,
-  t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date))
+    t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date)).toBuffer
 //  val latestPropertyAds = cleansedPropertyAds.filter(_.date == "2020-09-21") //temporary for checking if sequence works
 
   //DB part
-  val resultTable = statement.execute(createEmptyTable)
-
-
+  statement.execute(createTableSql) //Creates empty table
+  val appInsert = InsertDataApp() //appInsert object adds data to the table with "insert" method
+  val checkIfEmptySql =  "SELECT EXISTS(SELECT 1 FROM property_market_riga) AS Output" // Query that checks if table property_market_riga is empty
+  val rs = statement.executeQuery(checkIfEmptySql)//Executes the query returns ResultSet
+  // Checks the contents of ResultSet, if it's 0, calls appInsert object and inserts data
+  while (rs.next) {
+    val output = rs.getInt("Output")
+    if (output == 0) appInsert.insert(cleansedPropertyAds)
+  }
 
 }
