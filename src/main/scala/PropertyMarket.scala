@@ -1,7 +1,5 @@
 import java.sql.{DriverManager, ResultSet}
-
 import SQLqueries._
-
 import scala.StringContext.InvalidEscapeException
 import scala.collection.mutable.ListBuffer
 
