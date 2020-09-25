@@ -18,6 +18,7 @@ final case class InsertDataApp() {
         |date)
         |VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""".stripMargin
 
+
     val pstmt = conn.prepareStatement(insertSql) //Creates a PreparedStatement object
 
     for (obj <- theSeq) {
