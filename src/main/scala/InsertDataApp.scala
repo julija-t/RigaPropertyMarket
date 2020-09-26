@@ -1,46 +1,40 @@
+import java.sql.PreparedStatement
 import PropertyMarket.conn
+import SQLqueries.insertSql
 
 final case class InsertDataApp() {
   /**
-   * Insert rows into the riga_property_market table
+   * Insert rows into db table
    *
      * @param theSeq
    */
-  def insert(theSeq: scala.collection.mutable.Buffer[PropertyAdClean]) {
-    val insertSql =
-      """
-        |INSERT INTO property_market_riga(
-        |id, project_name, developer,
-        |city, district, address,
-        |property_type, status, size,
-        |number_of_rooms, floor, price,
-        |price_per_sqm, project_link, apartment_link,
-        |date)
-        |VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""".stripMargin
-
+  def insertIntoDb(theSeq: scala.collection.mutable.Buffer[PropertyAdClean]){
 
     val pstmt = conn.prepareStatement(insertSql) //Creates a PreparedStatement object
 
-    for (obj <- theSeq) {
-      pstmt.setString(1, obj.id)
-      pstmt.setString(2, obj.project_name)
-      pstmt.setString(3, obj.developer)
-      pstmt.setString(4, obj.city)
-      pstmt.setString(5, obj.district)
-      pstmt.setString(6, obj.address)
-      pstmt.setString(7, obj.property_type)
-      pstmt.setString(8, obj.status)
-      pstmt.setDouble(9, obj.size)
-      pstmt.setInt(10, obj.number_of_rooms)
-      pstmt.setInt(11, obj.floor)
-      pstmt.setDouble(12, obj.price)
-      pstmt.setDouble(13, obj.price_per_sqm)
-      pstmt.setString(14, obj.project_link)
-      pstmt.setString(15, obj.apartment_link)
-      pstmt.setString(16, obj.date)
-      pstmt.execute()
+    def setPropertyAd (pstmt: PreparedStatement, propertyAd: PropertyAdClean ): Unit = {
+      pstmt.setString(1, propertyAd.id)
+      pstmt.setString(2, propertyAd.project_name)
+      pstmt.setString(3, propertyAd.developer)
+      pstmt.setString(4, propertyAd.city)
+      pstmt.setString(5, propertyAd.district)
+      pstmt.setString(6, propertyAd.address)
+      pstmt.setString(7, propertyAd.property_type)
+      pstmt.setString(8, propertyAd.status)
+      pstmt.setDouble(9, propertyAd.size)
+      pstmt.setInt(10, propertyAd.number_of_rooms)
+      pstmt.setInt(11, propertyAd.floor)
+      pstmt.setDouble(12, propertyAd.price)
+      pstmt.setDouble(13, propertyAd.price_per_sqm)
+      pstmt.setString(14, propertyAd.project_link)
+      pstmt.setString(15, propertyAd.apartment_link)
+      pstmt.setString(16, propertyAd.date)
+      pstmt.addBatch
+
     }
 
+    theSeq.foreach(setPropertyAd(pstmt, _))
+    pstmt.executeBatch()
     pstmt.close()
   }
 

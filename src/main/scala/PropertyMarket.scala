@@ -40,7 +40,8 @@ object PropertyMarket extends App{
     var myListBuf = scala.collection.mutable.ListBuffer[Seq[String]]()
     val bufferedSource = io.Source.fromFile(fileName)
     for (line <- bufferedSource.getLines) {
-      val splitLine = line.split(";")
+      val editedLine = "1;" ++ line
+      val splitLine = editedLine.split(";")
       myListBuf += splitLine
     }
     bufferedSource.close
@@ -49,9 +50,9 @@ object PropertyMarket extends App{
 
   //Gets sequence of PropertyAd objects
   def getPropertyAdSeq(splitLineSeq: Seq[Seq[String]]): Seq[PropertyAd] = {
-    splitLineSeq.map(t => PropertyAd(t.head, t(1), t(2), t(3), t(4), t(5),
-      t(6), t(7), t(8), t(9).toDouble, t(10), t(11).toInt, t(12).toInt,
-      t(13).toDouble, t(14).toDouble, t(15), t(16), t(17), t(18)))
+    splitLineSeq.map(t => PropertyAd(t.head.toInt, t(1), t(2), t(3), t(4), t(5),
+      t(6), t(7), t(8), t(9), t(10).toDouble, t(11), t(12).toInt,
+      t(13).toInt, t(14).toDouble, t(15).toDouble, t(16), t(17), t(18), t(19)))
   }
 
   //Connects to database
@@ -138,7 +139,7 @@ object PropertyMarket extends App{
   val rawSplit = getParsedLines(filePath)
   val seqWithoutEmptyValues = rawSplit.map(line => line.map(el => if (el.isEmpty) 0.toString else el))
   val allPropertyAds = getPropertyAdSeq(seqWithoutEmptyValues.slice(1, seqWithoutEmptyValues.length))
-  val cleansedPropertyAds = allPropertyAds.map(t => PropertyAdClean(t.id, t.project_name, t.developer, t.city,
+  val cleansedPropertyAds = allPropertyAds.map(t => PropertyAdClean(t.ad_id, t.id, t.project_name, t.developer, t.city,
     t.district, t.address, t.property_type, t.status, t.size, t.number_of_rooms,
     t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date)).toBuffer
 
@@ -154,8 +155,8 @@ object PropertyMarket extends App{
   // Checks the contents of ResultSet, if it's 0, calls appInsert object and inserts data
   while (rs.next) {
     val output = rs.getInt("Output")
-    if (output == 0) appInsert.insert(cleansedPropertyAds)
+    if (output == 0) appInsert.insertIntoDb(cleansedPropertyAds)
   }
-  printReport()
+  //printReport()
 
 }

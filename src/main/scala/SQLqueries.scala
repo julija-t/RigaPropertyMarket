@@ -3,7 +3,8 @@ object SQLqueries {
   val createTableSql =
     """
       |CREATE TABLE IF NOT EXISTS property_market_riga (
-      |id TEXT,
+      |ad_id INTEGER PRIMARY KEY,
+      |id INT,
       |project_name TEXT,
       |developer TEXT,
       |city TEXT,
@@ -20,6 +21,17 @@ object SQLqueries {
       |apartment_link TEXT,
       |date DATE
       |)""".stripMargin
+
+  val insertSql =
+    """
+      |INSERT INTO property_market_riga(
+      |id, project_name, developer,
+      |city, district, address,
+      |property_type, status, size,
+      |number_of_rooms, floor, price,
+      |price_per_sqm, project_link, apartment_link,
+      |date)
+      |VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""".stripMargin
 
   val sql1 =
     """
