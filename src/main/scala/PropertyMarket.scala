@@ -92,7 +92,7 @@ object PropertyMarket extends App{
     date
   }
 
-  //Prints to console query results with date specified as parameter
+  //Prints to console: query results with date specified as parameter
   def printToConsole(sql: String, date: String): Unit = {
     def getResultSet() = {
       val pstmt = conn.prepareStatement(sql)
@@ -123,7 +123,7 @@ object PropertyMarket extends App{
     }
   }
 
-  //Prints to console finished report
+  //Prints to console: finished report
   def printReport(date: String): Unit = {
     val dateString = date
     println(s"Riga real estate report: $dateString")
