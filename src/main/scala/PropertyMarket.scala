@@ -7,7 +7,7 @@ object PropertyMarket extends App{
   val filePath = if(args.nonEmpty) args(0) else "./src/resources/property_market_2109.csv"
   val dbname = if(args.nonEmpty) args(1) else "property_market.db"
   val url = if(args.nonEmpty) args(2) else getDbUrl() //url where the database is located
-  val dateString = "21-09-2020"
+
 
   //Counts number of lines in a file
   def getLineCount(fileName:String): Int = {
@@ -86,18 +86,37 @@ object PropertyMarket extends App{
     myHashMap
   }
 
-  //Prints to console query results
-  def printToConsole(sql:String): Unit = {
-    val resultSet = statement.executeQuery(sql)
-    val meta = resultSet.getMetaData
+  def getDate(sql: String) = {
+    val rs = statement.executeQuery(sql)
+    val date = rs.getString(1).mkString
+    date
+  }
 
+  //Prints to console query results with date specified as parameter
+  def printToConsole(sql: String, date: String): Unit = {
+    def getResultSet() = {
+      val pstmt = conn.prepareStatement(sql)
+      var resultSet = pstmt.executeQuery()
+      if (sql.count(i => i == '?') == 0) {
+        resultSet = statement.executeQuery(sql)
+      } else if (sql.count(i => i == '?') == 1) {
+        pstmt.setString(1, date)
+        resultSet = pstmt.executeQuery()
+      } else if (sql.count(i => i == '?') == 2) {
+        pstmt.setString(1, date)
+        pstmt.setString(2, date)
+        resultSet = pstmt.executeQuery()
+      }
+      resultSet
+    }
+    val resultSet = getResultSet()
+    val meta = resultSet.getMetaData
     var colSeq = ListBuffer[String]()
     for (i <- 1 to
       meta.getColumnCount) {
       print(meta.getColumnName(i) + " " * 25)
       colSeq += meta.getColumnName(i)
-    }
-
+  }
     while (resultSet.next()) {
       println()
       colSeq.foreach(col => print(resultSet.getString(col) + " " * (39- resultSet.getString(col).length)))
@@ -105,28 +124,29 @@ object PropertyMarket extends App{
   }
 
   //Prints to console finished report
-  def printReport(): Unit = {
+  def printReport(date: String): Unit = {
+    val dateString = date
     println(s"Riga real estate report: $dateString")
     println(Console.BOLD + s"\n\n1.TOP 5 most expensive developers in Riga by avg price per sqm EUR ($dateString) \n" + Console.RESET)
-    printToConsole(sql1)
+    printToConsole(sql1, dateString)
     println(Console.BOLD + s"\n\n2.TOP 5 most expensive districts in Riga by avg price per sqm EUR ($dateString) \n" + Console.RESET)
-    printToConsole(sql2)
+    printToConsole(sql2, dateString)
     println(Console.BOLD + s"\n\n3.TOP 5 most affordable districts in Riga by avg price per sqm EUR ($dateString) \n" + Console.RESET)
-    printToConsole(sql3)
+    printToConsole(sql3, dateString)
     println(Console.BOLD + s"\n\n4.Project count and % of total by developer in Riga ($dateString) \n" + Console.RESET)
-    printToConsole(sql4)
+    printToConsole(sql4, dateString)
     println(Console.BOLD + s"\n\n5.TOP 5 most expensive projects by average price per sqm EUR in Riga ($dateString) \n" + Console.RESET)
-    printToConsole(sql5)
+    printToConsole(sql5, dateString)
     println(Console.BOLD + s"\n\n6.Average price per sqm EUR by number of rooms in Riga ($dateString) \n" + Console.RESET)
-    printToConsole(sql6)
+    printToConsole(sql6, dateString)
     println(Console.BOLD + s"\n\n7.Apartment count in Riga by status and percentage of total\n" + Console.RESET)
-    printToConsole(sql7)
+    printToConsole(sql7, dateString)
     println(Console.BOLD + "\n\n8.TOP 5 popular districts in Riga by developer count \n" + Console.RESET)
-    printToConsole(sql8)
+    printToConsole(sql8, dateString)
     println(Console.BOLD + "\n\n9.Average price per sqm EUR in Riga by months \n" + Console.RESET)
-    printToConsole(sql9)
+    printToConsole(sql9, dateString)
     println(Console.BOLD + "\n\n10.Average price per sqm EUR outside Riga by months \n" + Console.RESET)
-    printToConsole(sql10)
+    printToConsole(sql10, dateString)
   }
 
 
@@ -139,14 +159,14 @@ object PropertyMarket extends App{
   val rawSplit = getParsedLines(filePath)
   val seqWithoutEmptyValues = rawSplit.map(line => line.map(el => if (el.isEmpty) 0.toString else el))
   val allPropertyAds = getPropertyAdSeq(seqWithoutEmptyValues.slice(1, seqWithoutEmptyValues.length))
-  val cleansedPropertyAds = allPropertyAds.map(t => PropertyAdClean(t.ad_id, t.id, t.project_name, t.developer, t.city,
+  val cleansedPropertyAds = allPropertyAds.map(t => PropertyAdClean(t.ad_id, t.property_id, t.project_name, t.developer, t.city,
     t.district, t.address, t.property_type, t.status, t.size, t.number_of_rooms,
     t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date)).toBuffer
 
 
   //DB part
   val conn = getConnection(url)
-  val statement = conn.createStatement()
+  val statement = conn.createStatement
   statement.execute(createTableSql) //Creates empty table
   val appInsert = InsertDataApp() //appInsert object adds data to the table with "insert" method
   val checkIfEmptySql =  "SELECT EXISTS(SELECT 1 FROM property_market_riga) AS Output" // Checks if table property_market_riga is empty
@@ -156,6 +176,7 @@ object PropertyMarket extends App{
     val output = rs.getInt("Output")
     if (output == 0) appInsert.insertIntoDb(cleansedPropertyAds)
   }
-  printReport()
+  val latestDate = getDate(latestDateSql)
+  printReport(latestDate)
 
 }

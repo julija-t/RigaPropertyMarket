@@ -14,7 +14,7 @@ final case class InsertDataApp() {
     val pstmt = conn.prepareStatement(insertSql) //Creates a PreparedStatement object
 
     def setPropertyAd (pstmt: PreparedStatement, propertyAd: PropertyAdClean ): Unit = {
-      pstmt.setString(1, propertyAd.id)
+      pstmt.setString(1, propertyAd.property_id)
       pstmt.setString(2, propertyAd.project_name)
       pstmt.setString(3, propertyAd.developer)
       pstmt.setString(4, propertyAd.city)

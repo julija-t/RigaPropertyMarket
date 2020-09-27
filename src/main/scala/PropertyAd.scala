@@ -1,5 +1,5 @@
 final case class PropertyAd(ad_id: Int,
-                            id: String,
+                            property_id: String,
                             project_name: String,
                             developer: String,
                             city: String,
