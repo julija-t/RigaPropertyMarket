@@ -145,7 +145,6 @@ object PropertyMarket extends App{
 
 
   //DB part
-
   val conn = getConnection(url)
   val statement = conn.createStatement()
   statement.execute(createTableSql) //Creates empty table
@@ -157,6 +156,6 @@ object PropertyMarket extends App{
     val output = rs.getInt("Output")
     if (output == 0) appInsert.insertIntoDb(cleansedPropertyAds)
   }
-  //printReport()
+  printReport()
 
 }

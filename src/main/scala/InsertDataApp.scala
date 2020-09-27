@@ -10,6 +10,7 @@ final case class InsertDataApp() {
    */
   def insertIntoDb(theSeq: scala.collection.mutable.Buffer[PropertyAdClean]){
 
+    conn.setAutoCommit(false)
     val pstmt = conn.prepareStatement(insertSql) //Creates a PreparedStatement object
 
     def setPropertyAd (pstmt: PreparedStatement, propertyAd: PropertyAdClean ): Unit = {
@@ -35,6 +36,8 @@ final case class InsertDataApp() {
 
     theSeq.foreach(setPropertyAd(pstmt, _))
     pstmt.executeBatch()
+    conn.commit()
+    conn.setAutoCommit(true)
     pstmt.close()
   }
 
