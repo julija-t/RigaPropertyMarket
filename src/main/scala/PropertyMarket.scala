@@ -1,7 +1,8 @@
 import java.sql.{DriverManager, ResultSet}
 import SQLqueries._
-import scala.StringContext.InvalidEscapeException
+import scala.collection.immutable.ListMap
 import scala.collection.mutable.ListBuffer
+
 
 object PropertyMarket extends App{
   val filePath = if(args.nonEmpty) args(0) else "./src/resources/property_market_2109.csv"
@@ -66,7 +67,6 @@ object PropertyMarket extends App{
     val environmentVars = System.getenv()
     val sqlite_home = environmentVars.get("SQLITE_HOME")
     val osName = System.getProperty("os.name").toLowerCase()
-    println(osName)
     val isWindowsOs = osName.startsWith("windows")
     var url = ""
     if (isWindowsOs) {
@@ -78,16 +78,27 @@ object PropertyMarket extends App{
   }
 
   //Converts ResultSet to HashMap
-  def sqlToHashMap(sql: String) = {
-    val rs: ResultSet = statement.executeQuery(sql)
-    val myHashMap =
-      Iterator
-      .continually(rs.next)
-      .takeWhile(identity)
-      .map { _ => rs.getString(1) -> rs.getString(2)}
-      .toMap
+  def sqlToHashMap(sql: String, date: String) = {
+    val rs: ResultSet = getResultSetApp().getResultSet(sql, date)
+    val nrOfColumns = rs.getMetaData.getColumnCount
+    var myHashMap = Map[String, String]()
 
-    myHashMap
+      if (nrOfColumns == 2) {
+        myHashMap =
+          Iterator
+          .continually(rs.next)
+          .takeWhile(identity)
+          .map { _ => rs.getString(1) -> rs.getString(2)}
+          .toMap
+      } else if (nrOfColumns == 3) {
+        myHashMap =
+          Iterator
+          .continually(rs.next)
+          .takeWhile(identity)
+          .map { _ => rs.getString(1) -> rs.getString(3)}
+          .toMap
+      }
+    ListMap(myHashMap.toSeq.sortWith(_._2 > _._2):_*)
   }
 
   def getDate(sql: String) = {
@@ -98,33 +109,19 @@ object PropertyMarket extends App{
 
   //Prints to console: query results with date specified as parameter
   def printToConsole(sql: String, date: String): Unit = {
-    def getResultSet() = {
-      val pstmt = conn.prepareStatement(sql)
-      var resultSet = pstmt.executeQuery()
-      if (sql.count(i => i == '?') == 0) {
-        resultSet = statement.executeQuery(sql)
-      } else if (sql.count(i => i == '?') == 1) {
-        pstmt.setString(1, date)
-        resultSet = pstmt.executeQuery()
-      } else if (sql.count(i => i == '?') == 2) {
-        pstmt.setString(1, date)
-        pstmt.setString(2, date)
-        resultSet = pstmt.executeQuery()
-      }
-      resultSet
-    }
-    val resultSet = getResultSet()
-    val meta = resultSet.getMetaData
+    val rs: ResultSet = getResultSetApp().getResultSet(sql, date)
+    val meta = rs.getMetaData
     var colSeq = ListBuffer[String]()
     for (i <- 1 to
       meta.getColumnCount) {
       print(meta.getColumnName(i) + " " * 25)
       colSeq += meta.getColumnName(i)
   }
-    while (resultSet.next()) {
+    while (rs.next()) {
       println()
-      colSeq.foreach(col => print(resultSet.getString(col) + " " * (39- resultSet.getString(col).length)))
+      colSeq.foreach(col => print(rs.getString(col) + " " * (39- rs.getString(col).length)))
     }
+    println()
   }
 
   //Prints to console: finished report
@@ -181,5 +178,9 @@ object PropertyMarket extends App{
     if (output == 0) appInsert.insertIntoDb(cleansedPropertyAds)
   }
   printReport(latestDate)
+  val myMap = sqlToHashMap(sql1, latestDate)
+  val myMap2 = sqlToHashMap(sql4, latestDate)
+  myMap foreach {case (key, value) => println (key + "-->" + value)}
+  myMap2.foreach({case (k,v) => println(k + "-->" + v)})
 
 }
