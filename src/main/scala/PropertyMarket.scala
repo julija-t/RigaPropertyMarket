@@ -7,6 +7,7 @@ object PropertyMarket extends App{
   val filePath = if(args.nonEmpty) args(0) else "./src/resources/property_market_2109.csv"
   val dbname = if(args.nonEmpty) args(1) else "property_market.db"
   val url = if(args.nonEmpty) args(2) else getDbUrl() //url where the database is located
+  lazy val latestDate = getDate(latestDateSql)
 
 
   //Counts number of lines in a file
@@ -64,11 +65,14 @@ object PropertyMarket extends App{
   def getDbUrl() = {
     val environmentVars = System.getenv()
     val sqlite_home = environmentVars.get("SQLITE_HOME")
+    val osName = System.getProperty("os.name").toLowerCase()
+    println(osName)
+    val isWindowsOs = osName.startsWith("windows")
     var url = ""
-    try {
-      url = s"jdbc:sqlite:$sqlite_home\db\$dbname"
-    } catch {
-      case e: InvalidEscapeException => url = s"jdbc:sqlite:$sqlite_home//db//$dbname"
+    if (isWindowsOs) {
+      url = s"jdbc:sqlite:$sqlite_home\\db\\$dbname"
+    }
+    else { url =  s"jdbc:sqlite:$sqlite_home/db/$dbname"
     }
     url
   }
@@ -176,7 +180,6 @@ object PropertyMarket extends App{
     val output = rs.getInt("Output")
     if (output == 0) appInsert.insertIntoDb(cleansedPropertyAds)
   }
-  val latestDate = getDate(latestDateSql)
   printReport(latestDate)
 
 }
