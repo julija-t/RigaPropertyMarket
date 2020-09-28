@@ -37,7 +37,7 @@ object SQLqueries {
 
   val sql1 =
     """
-      |SELECT developer,round(AVG(price_per_sqm),2) AS AVG_price_by_sqm
+      |SELECT developer,round(AVG(price_per_sqm),2) AS avg_price_by_sqm
       |FROM property_market_riga pmr
       |WHERE price_per_sqm!=0 AND city ="Rīga" AND size>10 AND number_of_rooms >0 AND date = :date
       |GROUP BY developer
@@ -47,7 +47,7 @@ object SQLqueries {
 
   val sql2 =
     """
-      |SELECT district, round(AVG(price_per_sqm),2) AS AVG_price_by_sqm
+      |SELECT district, round(AVG(price_per_sqm),2) AS avg_price_by_sqm
       |FROM property_market_riga pmr
       |WHERE price_per_sqm!=0 AND city ="Rīga" AND size>10 AND number_of_rooms >0 AND date = :date
       |GROUP BY district
@@ -57,7 +57,7 @@ object SQLqueries {
 
   val sql3 =
     """
-      |SELECT district, round(AVG(price_per_sqm),2) AS AVG_price_by_sqm
+      |SELECT district, round(AVG(price_per_sqm),2) AS avg_price_by_sqm
       |FROM property_market_riga pmr
       |WHERE price_per_sqm!=0 AND city ="Rīga" AND size>10 AND number_of_rooms >0 AND date = :date
       |GROUP BY district
@@ -78,7 +78,7 @@ object SQLqueries {
 
   val sql5 =
     """
-      |SELECT project_name, round(AVG(price_per_sqm),2) as Avg_price_per_sqm
+      |SELECT project_name, round(AVG(price_per_sqm),2) as avg_price_per_sqm
       |FROM property_market_riga pmr
       |WHERE price_per_sqm!=0 AND city ="Rīga" AND size>10 AND number_of_rooms >0 AND date = :date
       |GROUP BY project_name
@@ -116,7 +116,7 @@ object SQLqueries {
 
   val sql9 =
     """
-      |SELECT strftime('%m', date) as Month, round(AVG(price_per_sqm),2) as Avg_price_per_sqm
+      |SELECT strftime('%m', date) as month, round(AVG(price_per_sqm),2) as avg_price_per_sqm
       |FROM property_market_riga pmr
       |WHERE price_per_sqm!=0 AND city ="Rīga" AND size>10 AND number_of_rooms >0
       |GROUP BY month
@@ -129,5 +129,7 @@ object SQLqueries {
       |WHERE price_per_sqm!=0 AND city <>"Rīga" AND size>10 AND number_of_rooms >0
       |GROUP BY month;
       |""".stripMargin
+
+  val sqls = Seq(sql1, sql2, sql3, sql4, sql5, sql6, sql7, sql8, sql9, sql10)
 
 }

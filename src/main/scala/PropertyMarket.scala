@@ -1,14 +1,19 @@
+import java.io.FileWriter
 import java.sql.{DriverManager, ResultSet}
+
 import SQLqueries._
+import ReportMessages._
+
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ListBuffer
 
 
 object PropertyMarket extends App{
   val filePath = if(args.nonEmpty) args(0) else "./src/resources/property_market_2109.csv"
-  val dbname = if(args.nonEmpty) args(1) else "property_market.db"
-  val url = if(args.nonEmpty) args(2) else getDbUrl() //url where the database is located
-  lazy val latestDate = getDate(latestDateSql)
+  val destName = if(args.nonEmpty) args(1) else "./src/resources/property_market_2109_report.txt"
+  val dbname = if(args.nonEmpty) args(2) else "property_market.db"
+  val url = if(args.nonEmpty) args(3) else getDbUrl() //url where the database is located
+  lazy val date = if(args.nonEmpty) args(4) else getDate(latestDateSql)
 
 
   //Counts number of lines in a file
@@ -78,12 +83,15 @@ object PropertyMarket extends App{
   }
 
   //Converts ResultSet to HashMap
-  def sqlToHashMap(sql: String, date: String) = {
+  def sqlToListMap(sql: String, date: String = date): ListMap[String, String] = {
     val rs: ResultSet = getResultSetApp().getResultSet(sql, date)
     val nrOfColumns = rs.getMetaData.getColumnCount
+
+    var columnNamesMap = Map[String, String]()
     var myHashMap = Map[String, String]()
 
       if (nrOfColumns == 2) {
+        columnNamesMap = Map(rs.getMetaData.getColumnName(1) -> rs.getMetaData.getColumnName(2))
         myHashMap =
           Iterator
           .continually(rs.next)
@@ -91,6 +99,7 @@ object PropertyMarket extends App{
           .map { _ => rs.getString(1) -> rs.getString(2)}
           .toMap
       } else if (nrOfColumns == 3) {
+        columnNamesMap = Map(rs.getMetaData.getColumnName(1) -> rs.getMetaData.getColumnName(3))
         myHashMap =
           Iterator
           .continually(rs.next)
@@ -98,7 +107,9 @@ object PropertyMarket extends App{
           .map { _ => rs.getString(1) -> rs.getString(3)}
           .toMap
       }
-    ListMap(myHashMap.toSeq.sortWith(_._2 > _._2):_*)
+    val concatMap = columnNamesMap.++(myHashMap)
+    val sortedMap = ListMap(concatMap.toSeq.sortWith(_._2 > _._2):_*)
+    sortedMap
   }
 
   def getDate(sql: String) = {
@@ -108,7 +119,7 @@ object PropertyMarket extends App{
   }
 
   //Prints to console: query results with date specified as parameter
-  def printToConsole(sql: String, date: String): Unit = {
+  def printToConsole(sql: String, date: String = date): Unit = {
     val rs: ResultSet = getResultSetApp().getResultSet(sql, date)
     val meta = rs.getMetaData
     var colSeq = ListBuffer[String]()
@@ -125,32 +136,41 @@ object PropertyMarket extends App{
   }
 
   //Prints to console: finished report
-  def printReport(date: String): Unit = {
-    val dateString = date
-    println(s"Riga real estate report: $dateString")
-    println(Console.BOLD + s"\n\n1.TOP 5 most expensive developers in Riga by avg price per sqm EUR ($dateString) \n" + Console.RESET)
-    printToConsole(sql1, dateString)
-    println(Console.BOLD + s"\n\n2.TOP 5 most expensive districts in Riga by avg price per sqm EUR ($dateString) \n" + Console.RESET)
-    printToConsole(sql2, dateString)
-    println(Console.BOLD + s"\n\n3.TOP 5 most affordable districts in Riga by avg price per sqm EUR ($dateString) \n" + Console.RESET)
-    printToConsole(sql3, dateString)
-    println(Console.BOLD + s"\n\n4.Project count and % of total by developer in Riga ($dateString) \n" + Console.RESET)
-    printToConsole(sql4, dateString)
-    println(Console.BOLD + s"\n\n5.TOP 5 most expensive projects by average price per sqm EUR in Riga ($dateString) \n" + Console.RESET)
-    printToConsole(sql5, dateString)
-    println(Console.BOLD + s"\n\n6.Average price per sqm EUR by number of rooms in Riga ($dateString) \n" + Console.RESET)
-    printToConsole(sql6, dateString)
-    println(Console.BOLD + s"\n\n7.Apartment count in Riga by status and percentage of total\n" + Console.RESET)
-    printToConsole(sql7, dateString)
-    println(Console.BOLD + "\n\n8.TOP 5 popular districts in Riga by developer count \n" + Console.RESET)
-    printToConsole(sql8, dateString)
-    println(Console.BOLD + "\n\n9.Average price per sqm EUR in Riga by months \n" + Console.RESET)
-    printToConsole(sql9, dateString)
-    println(Console.BOLD + "\n\n10.Average price per sqm EUR outside Riga by months \n" + Console.RESET)
-    printToConsole(sql10, dateString)
+  def printReport(date: String = date): Unit = {
+    var messagesSeq = messages
+    println("Displaying report in console")
+    println((s"\n\nRiga real estate report: $date").toUpperCase)
+
+    def toConsole (sql: String) = {
+      println(Console.BOLD + messagesSeq.head + Console.RESET)
+      printToConsole(sql, dateString)
+      messagesSeq = messagesSeq.drop(1)
+    }
+
+    sqls.foreach(sql => toConsole(sql))
   }
 
+  def saveReport(destName: String = destName, sqls: Seq[String] = sqls, messages: Seq[String] = messages): Unit = {
+    println(s"\nSaving Report to file $destName")
+    val fw = new FileWriter(destName, false)
+    val reportName = s"Riga real estate report: $date".toUpperCase
+    fw.write(reportName)
+    var sqlSeq = sqls
 
+    def writeMap(message: String) = {
+      val myMap = sqlToListMap(sqlSeq.head, date)
+      fw.write(message)
+      fw.write("\n")
+      val changedMap = myMap.map({case (k,v) => k + " " * (40 - k.length) + v + "\n"}).mkString
+      fw.write(changedMap)
+      sqlSeq = sqlSeq.drop(1)
+    }
+
+    messages.foreach(message => writeMap(message))
+
+    fw.close()
+    println(s"All done processing file $filePath into $destName.")
+  }
 
 
   //CSV part
@@ -177,10 +197,7 @@ object PropertyMarket extends App{
     val output = rs.getInt("Output")
     if (output == 0) appInsert.insertIntoDb(cleansedPropertyAds)
   }
-  printReport(latestDate)
-  val myMap = sqlToHashMap(sql1, latestDate)
-  val myMap2 = sqlToHashMap(sql4, latestDate)
-  myMap foreach {case (key, value) => println (key + "-->" + value)}
-  myMap2.foreach({case (k,v) => println(k + "-->" + v)})
+  printReport()
+  saveReport()
 
 }
