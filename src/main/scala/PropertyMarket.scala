@@ -8,6 +8,8 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.ListBuffer
 import SetArgNames._
 
+import scala.sys.exit
+
 
 object PropertyMarket extends App{
 
@@ -72,10 +74,17 @@ object PropertyMarket extends App{
   //Gets url where database is located
   def getDbUrl(db:String) = {
     val environmentVars = System.getenv()
-    val sqlite_home = environmentVars.get("SQLITE_HOME").replace("\\", "/")
+    var sqlite_home = ""
+    try{
+      sqlite_home = environmentVars.get("SQLITE_HOME").replace("\\", "/")
+    }catch{
+      case e: NullPointerException => println("\nPlease specify path to SQLITE_HOME in system variables to continue")
+      exit(1)
+    }
     val url = s"jdbc:sqlite:$sqlite_home/db/$db"
+
     url
-  }
+    }
 
   //Converts ResultSet to ListMap
   def sqlToListMap(sql: String, date: String = date): ListMap[String, String] = {
