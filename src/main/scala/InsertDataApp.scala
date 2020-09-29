@@ -4,7 +4,7 @@ import SQLqueries.insertSql
 
 final case class InsertDataApp() {
   /**
-   * Insert rows into db table
+   * Inserts rows into db table
    *
      * @param theSeq
    */

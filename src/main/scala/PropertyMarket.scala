@@ -6,17 +6,19 @@ import ReportMessages._
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ListBuffer
+import SetArgNames._
 
 
 object PropertyMarket extends App{
-  val filePath = if(args.nonEmpty) args(0) else "./src/resources/property_market_2109.csv"
-  val destName = if(args.nonEmpty) args(1) else "./src/resources/property_market_2109_report.txt"
-  val dbname = if(args.nonEmpty) args(2) else "property_market.db"
-  val url = if(args.nonEmpty) args(3) else getDbUrl() //url where the database is located
-  lazy val date = if(args.nonEmpty) args(4) else getDate(latestDateSql)
 
+  val config = commandLineInterface.parse(args, Config())
+  val filePath: String = config.filePath
+  val destName: String = config.destName
+  val dbName: String = config.dbName
+  var date: String = config.date
+  val url: String = getDbUrl(dbName)
 
-  //Counts number of lines in a file
+  /** Counts number of lines in a file */
   def getLineCount(fileName:String): Int = {
     var count = 0
     val bufferedSource = io.Source.fromFile(fileName)
@@ -27,7 +29,7 @@ object PropertyMarket extends App{
     count
   }
 
-  //Checks if all rows have the same length, otherwise throws an Exception
+  /** Checks if all rows have the same length, otherwise throws an Exception */
   def checkRowLength(fileName:String): Unit = {
     var myListBuf = scala.collection.mutable.ListBuffer[Int]()
     val bufferedSource = io.Source.fromFile(fileName)
@@ -43,7 +45,7 @@ object PropertyMarket extends App{
   }
 
   //Gets sequence of lines from a file
-  def getParsedLines(fileName:String): Seq[Seq[String]] = {
+  def getParsedLines(fileName:String): ListBuffer[Seq[String]] = {
     var myListBuf = scala.collection.mutable.ListBuffer[Seq[String]]()
     val bufferedSource = io.Source.fromFile(fileName)
     for (line <- bufferedSource.getLines) {
@@ -56,7 +58,7 @@ object PropertyMarket extends App{
   }
 
   //Gets sequence of PropertyAd objects
-  def getPropertyAdSeq(splitLineSeq: Seq[Seq[String]]): Seq[PropertyAd] = {
+  def getPropertyAdSeq(splitLineSeq: ListBuffer[Seq[String]]): ListBuffer[PropertyAd] = {
     splitLineSeq.map(t => PropertyAd(t.head.toInt, t(1), t(2), t(3), t(4), t(5),
       t(6), t(7), t(8), t(9), t(10).toDouble, t(11), t(12).toInt,
       t(13).toInt, t(14).toDouble, t(15).toDouble, t(16), t(17), t(18), t(19)))
@@ -68,21 +70,14 @@ object PropertyMarket extends App{
     conn}
 
   //Gets url where database is located
-  def getDbUrl() = {
+  def getDbUrl(db:String) = {
     val environmentVars = System.getenv()
-    val sqlite_home = environmentVars.get("SQLITE_HOME")
-    val osName = System.getProperty("os.name").toLowerCase()
-    val isWindowsOs = osName.startsWith("windows")
-    var url = ""
-    if (isWindowsOs) {
-      url = s"jdbc:sqlite:$sqlite_home\\db\\$dbname"
-    }
-    else { url =  s"jdbc:sqlite:$sqlite_home/db/$dbname"
-    }
+    val sqlite_home = environmentVars.get("SQLITE_HOME").replace("\\", "/")
+    val url = s"jdbc:sqlite:$sqlite_home/db/$db"
     url
   }
 
-  //Converts ResultSet to HashMap
+  //Converts ResultSet to ListMap
   def sqlToListMap(sql: String, date: String = date): ListMap[String, String] = {
     val rs: ResultSet = getResultSetApp().getResultSet(sql, date)
     val nrOfColumns = rs.getMetaData.getColumnCount
@@ -112,6 +107,7 @@ object PropertyMarket extends App{
     sortedMap
   }
 
+  //Gets date from SQL query
   def getDate(sql: String) = {
     val rs = statement.executeQuery(sql)
     val date = rs.getString(1).mkString
@@ -136,12 +132,13 @@ object PropertyMarket extends App{
   }
 
   //Prints to console: finished report
-  def printReport(date: String = date): Unit = {
+  def printReport(): Unit = {
+    val dateString: String = date
     var messagesSeq = messages
     println("Displaying report in console")
-    println((s"\n\nRiga real estate report: $date").toUpperCase)
+    println(s"\n\nRiga real estate report: $dateString".toUpperCase)
 
-    def toConsole (sql: String) = {
+    def toConsole (sql: String): Unit = {
       println(Console.BOLD + messagesSeq.head + Console.RESET)
       printToConsole(sql, dateString)
       messagesSeq = messagesSeq.drop(1)
@@ -150,14 +147,14 @@ object PropertyMarket extends App{
     sqls.foreach(sql => toConsole(sql))
   }
 
-  def saveReport(destName: String = destName, sqls: Seq[String] = sqls, messages: Seq[String] = messages): Unit = {
-    println(s"\nSaving Report to file $destName")
+  //Saves report as a text file
+  def saveReport(destName: String = destName): Unit = {
+    val texts: Seq[String] = messages
     val fw = new FileWriter(destName, false)
     val reportName = s"Riga real estate report: $date".toUpperCase
-    fw.write(reportName)
     var sqlSeq = sqls
 
-    def writeMap(message: String) = {
+    def writeMap(message: String): Unit = {
       val myMap = sqlToListMap(sqlSeq.head, date)
       fw.write(message)
       fw.write("\n")
@@ -166,8 +163,9 @@ object PropertyMarket extends App{
       sqlSeq = sqlSeq.drop(1)
     }
 
-    messages.foreach(message => writeMap(message))
-
+    println(s"\nSaving Report to file $destName")
+    fw.write(reportName)
+    texts.foreach(text => writeMap(text))
     fw.close()
     println(s"All done processing file $filePath into $destName.")
   }
@@ -182,8 +180,7 @@ object PropertyMarket extends App{
   val allPropertyAds = getPropertyAdSeq(seqWithoutEmptyValues.slice(1, seqWithoutEmptyValues.length))
   val cleansedPropertyAds = allPropertyAds.map(t => PropertyAdClean(t.ad_id, t.property_id, t.project_name, t.developer, t.city,
     t.district, t.address, t.property_type, t.status, t.size, t.number_of_rooms,
-    t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date)).toBuffer
-
+    t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date))
 
   //DB part
   val conn = getConnection(url)
@@ -197,6 +194,9 @@ object PropertyMarket extends App{
     val output = rs.getInt("Output")
     if (output == 0) appInsert.insertIntoDb(cleansedPropertyAds)
   }
+
+  //Report
+  if (date == "noDate") date = getDate(latestDateSql)
   printReport()
   saveReport()
 
