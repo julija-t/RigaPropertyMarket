@@ -1,3 +1,5 @@
+/** Selecting necessary csv file objects/columns for further data processing */
+
 final case class PropertyAdClean(ad_id: Int,
                                  property_id: String,
                                  project_name: String,

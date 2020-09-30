@@ -1,3 +1,5 @@
+/** Defining all csv file objects/columns and their data types for data processing */
+
 final case class PropertyAd(ad_id: Int,
                             property_id: String,
                             project_name: String,

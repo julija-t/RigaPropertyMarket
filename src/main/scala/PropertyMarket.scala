@@ -10,9 +10,15 @@ import SetArgNames._
 
 import scala.sys.exit
 
+/** Extracts data from existing Real Estate csv file.
+ *Creates new SQL database of Real Estate.
+ *Queries the SQL database.
+ *Outputs new text file with latest Real Estate report.
+ */
 
 object PropertyMarket extends App{
 
+  /** Get arguments from SetArgNames object as values */
   val config = commandLineInterface.parse(args, Config())
   val filePath: String = config.filePath
   val destName: String = config.destName
@@ -20,7 +26,7 @@ object PropertyMarket extends App{
   var date: String = config.date
   val url: String = getDbUrl(dbName)
 
-  /** Counts number of lines in a file */
+  /** Counts number of lines in a csv file */
   def getLineCount(fileName:String): Int = {
     var count = 0
     val bufferedSource = io.Source.fromFile(fileName)
@@ -31,7 +37,7 @@ object PropertyMarket extends App{
     count
   }
 
-  /** Checks if all rows have the same length, otherwise throws an Exception */
+  /** Checks if all csv file rows have the same length, otherwise throws an Exception */
   def checkRowLength(fileName:String): Unit = {
     var myListBuf = scala.collection.mutable.ListBuffer[Int]()
     val bufferedSource = io.Source.fromFile(fileName)
@@ -46,7 +52,8 @@ object PropertyMarket extends App{
       throw new Exception ("The document has inconsistent row lengths. Cannot proceed with analysis.")
   }
 
-  //Gets sequence of lines from a file
+  /** Gets sequence of lines from a csv file */
+
   def getParsedLines(fileName:String): ListBuffer[Seq[String]] = {
     var myListBuf = scala.collection.mutable.ListBuffer[Seq[String]]()
     val bufferedSource = io.Source.fromFile(fileName)
@@ -59,19 +66,20 @@ object PropertyMarket extends App{
     myListBuf
   }
 
-  //Gets sequence of PropertyAd objects
+  /** Gets sequence of PropertyAd objects */
   def getPropertyAdSeq(splitLineSeq: ListBuffer[Seq[String]]): ListBuffer[PropertyAd] = {
     splitLineSeq.map(t => PropertyAd(t.head.toInt, t(1), t(2), t(3), t(4), t(5),
       t(6), t(7), t(8), t(9), t(10).toDouble, t(11), t(12).toInt,
       t(13).toInt, t(14).toDouble, t(15).toDouble, t(16), t(17), t(18), t(19)))
   }
 
-  //Connects to database
+
+  /** Connects to database */
   def getConnection(url: String) = {
     val conn = DriverManager.getConnection(url)
     conn}
 
-  //Gets url where database is located
+  /** Gets url where database is located, else shows an Exception */
   def getDbUrl(db:String) = {
     val environmentVars = System.getenv()
     var sqlite_home = ""
@@ -86,7 +94,7 @@ object PropertyMarket extends App{
     url
     }
 
-  //Converts ResultSet to ListMap
+  /**Converts ResultSet to ListMap */
   def sqlToListMap(sql: String, date: String = date): ListMap[String, String] = {
     val rs: ResultSet = getResultSetApp().getResultSet(sql, date)
     val nrOfColumns = rs.getMetaData.getColumnCount
@@ -116,14 +124,14 @@ object PropertyMarket extends App{
     sortedMap
   }
 
-  //Gets date from SQL query
+  /** Gets date from SQL query */
   def getDate(sql: String) = {
     val rs = statement.executeQuery(sql)
     val date = rs.getString(1).mkString
     date
   }
 
-  //Prints to console: query results with date specified as parameter
+  /** Prints to console: query results with date specified as parameter*/
   def printToConsole(sql: String, date: String = date): Unit = {
     val rs: ResultSet = getResultSetApp().getResultSet(sql, date)
     val meta = rs.getMetaData
@@ -140,13 +148,14 @@ object PropertyMarket extends App{
     println()
   }
 
-  //Prints to console: finished report
+  /** Prints to console: finished report */
   def printReport(): Unit = {
     val dateString: String = date
     var messagesSeq = messages
     println("Displaying report in console")
     println(s"\n\nRiga real estate report: $dateString".toUpperCase)
 
+    /**Sets style (pretty print) for sequences*/
     def toConsole (sql: String): Unit = {
       println(Console.BOLD + messagesSeq.head + Console.RESET)
       printToConsole(sql, dateString)
@@ -156,13 +165,14 @@ object PropertyMarket extends App{
     sqls.foreach(sql => toConsole(sql))
   }
 
-  //Saves report as a text file
+  /** Saves report as a text file */
   def saveReport(destName: String = destName): Unit = {
     val texts: Seq[String] = messages
     val fw = new FileWriter(destName, false)
     val reportName = s"Riga real estate report: $date".toUpperCase
     var sqlSeq = sqls
 
+/** Writes report to text file */
     def writeMap(message: String): Unit = {
       val myMap = sqlToListMap(sqlSeq.head, date)
       fw.write(message)
@@ -180,7 +190,10 @@ object PropertyMarket extends App{
   }
 
 
-  //CSV part
+  /** CSV part:
+   * calls functions to get from CSV file all the data
+   * links objects to csv data columns
+   * */
   val lineCount = getLineCount(filePath)
   println(s"We got a file with $lineCount lines")
   val checkingRows: Unit = checkRowLength(filePath)
@@ -191,7 +204,9 @@ object PropertyMarket extends App{
     t.district, t.address, t.property_type, t.status, t.size, t.number_of_rooms,
     t.floor, t.price, t.price_per_sqm, t.project_link, t.apartment_link, t.date))
 
-  //DB part
+  /** DATABASE part:
+   * calls functions to establish connections and to create new SQL database with data
+   */
   val conn = getConnection(url)
   val statement = conn.createStatement
   statement.execute(createTableSql) //Creates empty table
@@ -204,8 +219,9 @@ object PropertyMarket extends App{
     if (output == 0) appInsert.insertIntoDb(cleansedPropertyAds)
   }
 
-  //Report
-  if (date == "noDate") date = getDate(latestDateSql)
+  /** REPORT part:
+   * calls functions to print and save report to the destination */
+  if (date == "noDate") date = getDate(latestDateSql) //if date not specified, get latest Sql date
   printReport()
   saveReport()
 

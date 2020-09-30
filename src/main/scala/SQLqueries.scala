@@ -1,5 +1,12 @@
 object SQLqueries {
 
+  /** SQL queries:
+   * Creating SQL table
+   * Inserting data in table
+   * Querying database.
+   */
+
+  /** Creates SQL table and defines data types */
   val createTableSql: String =
     """
       |CREATE TABLE IF NOT EXISTS property_market_riga (
@@ -22,6 +29,7 @@ object SQLqueries {
       |date DATE
       |)""".stripMargin
 
+  /** Insert data into SQL table  */
   val insertSql: String =
     """
       |INSERT INTO property_market_riga(
@@ -33,8 +41,10 @@ object SQLqueries {
       |date)
       |VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""".stripMargin
 
+  /** Latest date in SQL database */
   val latestDateSql = "SELECT MAX(date) FROM property_market_riga;"
 
+  /** Multiple SQL queries for the final report */
   val sql1: String  =
     """
       |SELECT developer,round(AVG(price_per_sqm),2) AS avg_price_by_sqm
@@ -119,7 +129,7 @@ object SQLqueries {
       |FROM property_market_riga pmr
       |WHERE price_per_sqm!=0 AND city ="Rīga" AND size>10 AND number_of_rooms >0 AND date = :date
       |GROUP BY district
-      |ORDER BY dev_count desc
+      |ORDER BY dev_count DESC
       |LIMIT 5
       |""".stripMargin
 
@@ -129,6 +139,7 @@ object SQLqueries {
       |FROM property_market_riga pmr
       |WHERE price_per_sqm!=0 AND city ="Rīga" AND size>10 AND number_of_rooms >0
       |GROUP BY month
+      |ORDER BY month
       |""".stripMargin
 
   val sql11: String  =
@@ -136,9 +147,11 @@ object SQLqueries {
       |SELECT strftime('%m', date) as month, round(AVG(price_per_sqm),2) as avg_price_by_sqm
       |FROM property_market_riga pmr
       |WHERE price_per_sqm!=0 AND city <>"Rīga" AND size>10 AND number_of_rooms >0
-      |GROUP BY month;
+      |GROUP BY month
+      |ORDER BY month
       |""".stripMargin
 
+  /** Sequence of all SQL query values/results  */
   val sqls: Seq[String] = Seq(sql1, sql2, sql3, sql4, sql5, sql6, sql7, sql8, sql9, sql10, sql11)
 
 }

@@ -1,6 +1,8 @@
 import PropertyMarket.conn
 import PropertyMarket.statement
 
+/** Gets results from SQL db */
+
 final case class getResultSetApp(){
   def getResultSet(sql:String, date:String) = {
     val pstmt = conn.prepareStatement(sql)
