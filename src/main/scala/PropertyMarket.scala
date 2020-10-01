@@ -76,7 +76,6 @@ object PropertyMarket extends App{
       t(13).toInt, t(14).toDouble, t(15).toDouble, t(16), t(17), t(18), t(19)))
   }
 
-
   /** Connects to database */
   def getConnection(url: String) = {
     val conn = DriverManager.getConnection(url)
