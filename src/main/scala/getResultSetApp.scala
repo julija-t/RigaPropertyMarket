@@ -1,10 +1,12 @@
+import java.sql.ResultSet
+
 import PropertyMarket.conn
 import PropertyMarket.statement
 
-/** Gets results from SQL db */
+/** Gets ResultSet from SQL db */
 
 final case class getResultSetApp(){
-  def getResultSet(sql:String, date:String) = {
+  def getResultSet (sql:String, date:String): ResultSet = {
     val pstmt = conn.prepareStatement(sql)
     var resultSet = pstmt.executeQuery()
     if (sql.contains(":date")) {

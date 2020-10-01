@@ -1,19 +1,23 @@
 import java.io.FileWriter
 import java.sql.{DriverManager, ResultSet}
 
+import SetArgNames._
 import SQLqueries._
 import ReportMessages._
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ListBuffer
-import SetArgNames._
 
 import scala.sys.exit
 
 /** Extracts data from existing Real Estate csv file.
  *Creates new SQL database of Real Estate.
  *Queries the SQL database.
- *Outputs new text file with latest Real Estate report.
+ *Outputs new text file with Real Estate report with date set as argument or latest date available in database.
+ * CLI for setting arguments:     short: -f, long: --filePath
+ *                                short: -s, long: --destName
+ *                                short: -b, long: --dbName
+ *                                short: -d, long: --date
  */
 
 object PropertyMarket extends App{
@@ -53,7 +57,6 @@ object PropertyMarket extends App{
   }
 
   /** Gets sequence of lines from a csv file */
-
   def getParsedLines(fileName:String): ListBuffer[Seq[String]] = {
     var myListBuf = scala.collection.mutable.ListBuffer[Seq[String]]()
     val bufferedSource = io.Source.fromFile(fileName)
@@ -148,14 +151,13 @@ object PropertyMarket extends App{
     println()
   }
 
-  /** Prints to console: finished report */
+  /** Prints to console: finished report. Sets style (pretty print) for sequences */
   def printReport(): Unit = {
     val dateString: String = date
     var messagesSeq = messages
     println("Displaying report in console")
     println(s"\n\nRiga real estate report: $dateString".toUpperCase)
 
-    /**Sets style (pretty print) for sequences*/
     def toConsole (sql: String): Unit = {
       println(Console.BOLD + messagesSeq.head + Console.RESET)
       printToConsole(sql, dateString)
@@ -172,7 +174,6 @@ object PropertyMarket extends App{
     val reportName = s"Riga real estate report: $date".toUpperCase
     var sqlSeq = sqls
 
-/** Writes report to text file */
     def writeMap(message: String): Unit = {
       val myMap = sqlToListMap(sqlSeq.head, date)
       fw.write(message)
